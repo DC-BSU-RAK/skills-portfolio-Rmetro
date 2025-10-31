@@ -1,0 +1,201 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+import random
+
+# ---------- Global Variables ----------
+difficulty = ""
+question_count = 0
+score = 0
+attempt = 1
+num1 = num2 = 0
+operation = ""
+timer_seconds = 10
+timer_id = None
+
+
+# ---------- Functions ----------
+
+def displayMenu():
+    """Display difficulty menu."""
+    clear_window()
+    root.configure(bg="#E0F7FA")
+
+    tk.Label(root, text="🎯 ARITHMETIC QUIZ 🎯", font=("Arial", 21, "bold"), bg="#E0F7FA", fg="#004D40").pack(pady=19)
+    tk.Label(root, text="Select Difficulty Level", font=("Arial", 13), bg="#E0F7FA", fg="#00695C").pack(pady=9)
+
+    tk.Button(root, text="Easy (1-digit)", bg="#A5D6A7", fg="black", font=("Arial", 13, "bold"),
+              width=19, command=lambda: start_quiz("Easy")).pack(pady=4)
+
+    tk.Button(root, text="Moderate (2-digit)", bg="#FFF59D", fg="black", font=("Arial", 12, "bold"),
+              width=20, command=lambda: start_quiz("Moderate")).pack(pady=5)
+
+    tk.Button(root, text="Advanced (4-digit)", bg="#EF9A9A", fg="black", font=("Arial", 12, "bold"),
+              width=20, command=lambda: start_quiz("Advanced")).pack(pady=5)
+
+    tk.Button(root, text="Exit", bg="#B0BEC5", font=("Arial", 12), width=20, command=root.quit).pack(pady=20)
+
+
+def randomInt(level):
+    """Return a random integer based on difficulty level."""
+    if level == "Easy":
+        return random.randint(1, 9)
+    elif level == "Moderate":
+        return random.randint(10, 99)
+    elif level == "Advanced":
+        return random.randint(1000, 9999)
+
+
+def decideOperation():
+    """Randomly decide addition or subtraction."""
+    return random.choice(['+', '-'])
+
+
+def start_quiz(level):
+    """Initialize quiz variables and start first question."""
+    global difficulty, question_count, score, attempt
+    difficulty = level
+    question_count = 0
+    score = 0
+    attempt = 1
+    next_question()
+
+
+def next_question():
+    """Generate and display the next problem."""
+    global num1, num2, operation, answer_entry, question_count, attempt, progress_bar
+
+    clear_window()
+    root.configure(bg="#F1F8E9")
+
+    if question_count == 10:
+        displayResults()
+        return
+
+    num1 = randomInt(difficulty)
+    num2 = randomInt(difficulty)
+    operation = decideOperation()
+    if operation == '-' and num2 > num1:
+        num1, num2 = num2, num1
+
+    question_count += 1
+    attempt = 1
+
+    # Header
+    tk.Label(root, text=f"Question {question_count} of 10", font=("Arial", 16, "bold"), bg="#F1F8E9", fg="#1B5E20").pack(pady=10)
+
+    # Problem Display
+    tk.Label(root, text=f"{num1} {operation} {num2} = ?", font=("Arial", 28, "bold"), bg="#F1F8E9", fg="#2E7D32").pack(pady=10)
+
+    # Timer
+    tk.Label(root, text="Time Remaining:", font=("Arial", 12), bg="#F1F8E9").pack()
+    timer_label = tk.Label(root, text=f"{timer_seconds}", font=("Arial", 16, "bold"), fg="red", bg="#F1F8E9")
+    timer_label.pack()
+
+    # Progress bar
+    progress_bar = ttk.Progressbar(root, length=250, maximum=10, value=question_count)
+    progress_bar.pack(pady=10)
+
+    # Input field
+    tk.Label(root, text="Your Answer:", font=("Arial", 12), bg="#F1F8E9").pack()
+    answer_entry = tk.Entry(root, font=("Arial", 16), justify="center", width=10)
+    answer_entry.pack(pady=10)
+    answer_entry.focus()
+
+    tk.Button(root, text="Submit", bg="#81C784", fg="black", font=("Arial", 12, "bold"), width=12, command=lambda: check_answer(timer_label)).pack(pady=5)
+    tk.Button(root, text="Quit", bg="#FFAB91", font=("Arial", 12), width=12, command=root.quit).pack(pady=5)
+
+    # Start the timer
+    start_timer(timer_label)
+
+
+def start_timer(timer_label):
+    """Start countdown timer for each question."""
+    global timer_id, timer_seconds
+    time_left = int(timer_label["text"])
+
+    if time_left > 0:
+        timer_label.config(text=str(time_left - 1))
+        timer_id = root.after(1000, lambda: start_timer(timer_label))
+    else:
+        messagebox.showinfo("Time's Up!", "You ran out of time for this question!")
+        next_question()
+
+
+def check_answer(timer_label):
+    """Check if user's answer is correct and update score."""
+    global score, attempt
+
+    # Stop the timer
+    if timer_id:
+        root.after_cancel(timer_id)
+
+    user_input = answer_entry.get()
+    if not user_input.strip().lstrip('-').isdigit():
+        messagebox.showwarning("Invalid", "Please enter a valid number.")
+        start_timer(timer_label)
+        return
+
+    user_answer = int(user_input)
+    correct_answer = num1 + num2 if operation == '+' else num1 - num2
+
+    if user_answer == correct_answer:
+        if attempt == 1:
+            score += 10
+            messagebox.showinfo("✅ Correct!", "Correct! +10 points")
+        else:
+            score += 5
+            messagebox.showinfo("✅ Correct!", "Correct on second try! +5 points")
+        next_question()
+    else:
+        if attempt == 1:
+            attempt = 2
+            messagebox.showwarning("❌ Wrong", "Incorrect. Try again!")
+            start_timer(timer_label)
+        else:
+            messagebox.showinfo("❌ Incorrect", f"Wrong again! The correct answer was {correct_answer}.")
+            next_question()
+
+
+def displayResults():
+    """Show the final score and rank."""
+    clear_window()
+    root.configure(bg="#E3F2FD")
+
+    grade = ""
+    if score >= 90:
+        grade = "A+"
+    elif score >= 80:
+        grade = "A"
+    elif score >= 70:
+        grade = "B"
+    elif score >= 60:
+        grade = "C"
+    else:
+        grade = "F"
+
+    tk.Label(root, text="🏁 Quiz Complete! 🏁", font=("Arial", 22, "bold"), bg="#E3F2FD", fg="#0D47A1").pack(pady=20)
+    tk.Label(root, text=f"Final Score: {score} / 100", font=("Arial", 18), bg="#E3F2FD", fg="#1565C0").pack(pady=10)
+    tk.Label(root, text=f"Grade: {grade}", font=("Arial", 18, "bold"), bg="#E3F2FD", fg="#1E88E5").pack(pady=10)
+
+    tk.Button(root, text="Play Again", bg="#BBDEFB", fg="black", font=("Arial", 12, "bold"), width=15, command=displayMenu).pack(pady=10)
+    tk.Button(root, text="Exit", bg="#EF9A9A", font=("Arial", 12), width=15, command=root.quit).pack(pady=5)
+
+
+def clear_window():
+    """Remove all widgets from the window."""
+    for widget in root.winfo_children():
+        widget.destroy()
+
+
+# ---------- Main Program ----------
+root = tk.Tk()
+root.title("Colorful Arithmetic Quiz Game")
+root.geometry("450x500")
+
+style = ttk.Style()
+style.theme_use("clam")
+style.configure("TProgressbar", troughcolor="#C8E6C9", background="#43A047", thickness=20)
+
+displayMenu()
+
+root.mainloop()
