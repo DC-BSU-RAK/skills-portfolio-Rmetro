@@ -5,8 +5,65 @@ class JokeApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Joke Assistant")
+        self.root.geometry("600x480")
+        self.root.resizable(False, False)
 
-        # All jokes directly included here
+        # Background Canvas
+        self.canvas = tk.Canvas(root, width=600, height=480, highlightthickness=0)
+        self.canvas.place(x=0, y=0)
+
+        # Colors for animated gradient
+        self.color1 = [66, 135, 245]     # Blue
+        self.animate_gradient()
+
+        # Frame for text
+        self.text_frame = tk.Frame(root, bg="white", bd=3, relief="groove")
+        self.text_frame.place(relx=0.5, rely=0.45, anchor="center", width=500, height=220)
+
+        # Title (fixed – removed transparency)
+        self.title = tk.Label(
+            root,
+            text="Alexa Joke Assistant",
+            font=("Arial", 22, "bold"),
+            bg="#1e1e1e",
+            fg="white",
+            padx=10,
+            pady=5
+        )
+        self.title.place(relx=0.5, y=40, anchor="center")
+
+        # Joke setup label
+        self.setup_label = tk.Label(
+            self.text_frame,
+            text="",
+            font=("Arial", 14),
+            wraplength=480,
+            bg="white",
+            justify="left"
+        )
+        self.setup_label.pack(pady=10)
+
+        # Joke punchline label
+        self.punchline_label = tk.Label(
+            self.text_frame,
+            text="",
+            font=("Arial", 12, "italic"),
+            fg="#1E3A8A",
+            wraplength=480,
+            bg="white"
+        )
+        self.punchline_label.pack()
+
+        # Buttons frame
+        btn_frame = tk.Frame(root, bg="#1e1e1e")
+        btn_frame.place(relx=0.5, rely=0.82, anchor="center")
+
+        self.create_button(btn_frame, "Alexa tell me a Joke", self.show_setup).grid(row=0, column=0, padx=10, pady=5)
+        self.create_button(btn_frame, "Show Punchline", self.show_punchline).grid(row=0, column=1, padx=10, pady=5)
+        self.create_button(btn_frame, "Next Joke", self.show_setup).grid(row=1, column=0, padx=10, pady=5)
+        self.create_button(btn_frame, "Quit", self.root.quit, bg="#E11D48").grid(row=1, column=1, padx=10, pady=5)
+
+        # Full list of jokes
         self.jokes = [
             "Why did the chicken cross the road?To get to the other side.",
             "What happens if you boil a clown?You get a laughing stock.",
@@ -32,7 +89,7 @@ class JokeApp:
             "Why is it impossible to starve in the desert?Because of all the sand which is there!",
             "What did the cheese say when it looked in the mirror?Halloumi!",
             "Why did the developer go broke?Because he used up all his cache.",
-            "Did you know that ants are the only animals that don't get sick?It's true! It's because they have little antibodies.",
+            "Did you know that ants are the only animals that don't get sick?They have little antibodies.",
             "Why did the donut go to the dentist?To get a filling.",
             "What do you call a bear with no teeth?A gummy bear!",
             "What does a vegan zombie like to eat?Graaains.",
@@ -41,51 +98,55 @@ class JokeApp:
             "What did the full glass say to the empty glass?You look drunk.",
             "What's a potato's favorite form of transportation?The gravy train",
             "What did one ocean say to the other?Nothing, they just waved.",
-            "What did the right eye say to the left eye?Honestly, between you and me something smells.",
+            "What did the right eye say to the left eye?Between you and me something smells.",
             "What do you call a dog that's been run over by a steamroller?Spot!",
-            "What's the difference between a hippo and a zippo?One's pretty heavy and the other's a little lighter",
+            "What's the difference between a hippo and a zippo?One's heavy and the other's a little lighter",
             "Why don't scientists trust Atoms?They make up everything."
         ]
-
-        # Labels
-        self.setup_label = tk.Label(root, text="", font=("Arial", 14), wraplength=400)
-        self.setup_label.pack(pady=10)
-
-        self.punchline_label = tk.Label(root, text="", font=("Arial", 12, "italic"), fg="blue", wraplength=400)
-        self.punchline_label.pack(pady=5)
-
-        # Buttons
-        tk.Button(root, text="Alexa tell me a Joke", width=22, command=self.show_setup).pack(pady=5)
-        tk.Button(root, text="Show Punchline", width=22, command=self.show_punchline).pack(pady=5)
-        tk.Button(root, text="Next Joke", width=22, command=self.show_setup).pack(pady=5)
-        tk.Button(root, text="Quit", width=22, command=root.quit).pack(pady=10)
 
         self.current_setup = ""
         self.current_punchline = ""
 
-    def get_random_joke(self):
-        joke = random.choice(self.jokes)
-
-        # Split at the FIRST question mark only
-        if "?" in joke:
-            setup, punchline = joke.split("?", 1)
-            setup += "?"
-        else:
-            setup = joke
-            punchline = ""
-
-        return setup, punchline
+    def create_button(self, parent, text, command, bg="#2563EB"):
+        return tk.Button(
+            parent,
+            text=text,
+            command=command,
+            width=18,
+            font=("Arial", 11, "bold"),
+            bg=bg,
+            fg="white",
+            activebackground="#1E40AF",
+            activeforeground="white",
+            relief="raised",
+            bd=3
+        )
 
     def show_setup(self):
-        self.current_setup, self.current_punchline = self.get_random_joke()
-        self.setup_label.config(text=self.current_setup)
+        joke = random.choice(self.jokes)
+        setup, punchline = joke.split("?", 1)
+        setup += "?"
+        self.current_setup = setup
+        self.current_punchline = punchline
+
+        self.setup_label.config(text=setup)
         self.punchline_label.config(text="")
 
     def show_punchline(self):
         self.punchline_label.config(text=self.current_punchline)
 
+    def animate_gradient(self):
+        # Animate background color subtly
+        for i in range(3):
+            self.color1[i] = (self.color1[i] + 1) % 255
 
-# Run the App
+        color_hex = "#%02x%02x%02x" % tuple(self.color1)
+        self.canvas.create_rectangle(0, 0, 600, 480, fill=color_hex, outline="")
+
+        self.root.after(60, self.animate_gradient)
+
+
+# Run App
 root = tk.Tk()
 app = JokeApp(root)
 root.mainloop()
