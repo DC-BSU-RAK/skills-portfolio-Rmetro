@@ -1,0 +1,296 @@
+"""
+Student Manager - Dark Theme (Midnight Blue)
+Fully functional, embedded data only (no files)
+"""
+
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+
+# ----------------------------
+# Embedded student data
+# ----------------------------
+STUDENT_DATA = """
+10
+1345,John Curry,8,15,7,45
+2345,Sam Sturtivant,14,15,14,77
+9876,Lee Scott,17,11,16,99
+3724,Matt Thompson,19,11,15,81
+1212,Ron Herrema,14,17,18,66
+8439,Jake Hobbs,10,11,10,43
+2344,Jo Hyde,6,15,10,55
+9384,Gareth Southgate,5,6,8,33
+8327,Alan Shearer,20,20,20,100
+2983,Les Ferdinand,15,17,18,92
+"""
+
+# ----------------------------
+# Data utilities
+# ----------------------------
+def read_students_from_text(text=STUDENT_DATA):
+    students = []
+    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
+    for line in lines[1:]:
+        parts = [p.strip() for p in line.split(",")]
+        code = int(parts[0])
+        name = parts[1]
+        marks = list(map(int, parts[2:5]))
+        exam = int(parts[5])
+        students.append({"code": code, "name": name, "marks": marks, "exam": exam})
+    return students
+
+def coursework_total(student):
+    return sum(student["marks"])
+
+def overall_percentage(student):
+    return (coursework_total(student) + student["exam"]) / 160 * 100
+
+def grade_from_percentage(p):
+    if p >= 70: return "A"
+    if p >= 60: return "B"
+    if p >= 50: return "C"
+    if p >= 40: return "D"
+    return "F"
+
+def student_display_text(student):
+    ct = coursework_total(student)
+    ex = student["exam"]
+    p = overall_percentage(student)
+    grd = grade_from_percentage(p)
+    return (
+        f"Name: {student['name']}\n"
+        f"Student Number: {student['code']}\n"
+        f"Total coursework mark: {ct}/60\n"
+        f"Exam mark: {ex}/100\n"
+        f"Overall percentage: {p:.2f}%\n"
+        f"Grade: {grd}\n"
+        "----------------------------------------\n"
+    )
+
+# ----------------------------
+# Dark theme colors
+# ----------------------------
+BG_COLOR = "#1b1f3b"
+PANEL_COLOR = "#262b4d"
+BUTTON_COLOR = "#4a90e2"
+BUTTON_HOVER = "#6aa8ff"
+TEXT_COLOR = "#f5f5f5"
+
+# ----------------------------
+# Main App
+# ----------------------------
+class StudentManagerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Student Manager - Dark Theme")
+        self.root.geometry("900x650")
+        self.root.configure(bg=BG_COLOR)
+
+        # Load students from embedded data
+        self.students = read_students_from_text()
+
+        # Sidebar
+        self.sidebar = tk.Frame(root, bg=PANEL_COLOR, width=220)
+        self.sidebar.pack(side="left", fill="y")
+
+        buttons = [
+            ("View all students", self.view_all_students),
+            ("View individual student", self.view_individual_student),
+            ("Highest overall mark", self.show_highest),
+            ("Lowest overall mark", self.show_lowest),
+            ("Sort records", self.sort_records),
+            ("Add student", self.add_student),
+            ("Delete student", self.delete_student),
+            ("Update student", self.update_student),
+            ("Exit", root.quit)
+        ]
+
+        for text, cmd in buttons:
+            b = tk.Button(self.sidebar, text=text, command=cmd, bg=BUTTON_COLOR, fg="white",
+                          activebackground=BUTTON_HOVER, activeforeground="white",
+                          relief="flat", bd=0, highlightthickness=0)
+            b.pack(fill="x", padx=10, pady=6, ipady=8)
+
+        # Main display area
+        self.display_frame = tk.Frame(root, bg=BG_COLOR)
+        self.display_frame.pack(side="right", fill="both", expand=True)
+
+        self.text = tk.Text(self.display_frame, wrap="word", bg=PANEL_COLOR, fg=TEXT_COLOR,
+                            insertbackground=TEXT_COLOR, font=("Consolas", 11), bd=0)
+        self.text.pack(side="left", fill="both", expand=True, padx=(10,0), pady=10)
+
+        self.scrollbar = tk.Scrollbar(self.display_frame, command=self.text.yview, bg=PANEL_COLOR)
+        self.scrollbar.pack(side="right", fill="y", pady=10)
+        self.text.config(yscrollcommand=self.scrollbar.set)
+
+        self.print_welcome()
+
+    def print_welcome(self):
+        self.text.delete(1.0, tk.END)
+        self.text.insert(tk.END, "🟢 Student Manager - Dark Theme\n")
+        self.text.insert(tk.END, f"Loaded {len(self.students)} student(s)\n")
+        self.text.insert(tk.END, "Select an action from the sidebar.\n")
+        self.text.insert(tk.END, "----------------------------------------\n")
+
+    # ----------------------------
+    # Actions
+    # ----------------------------
+    def view_all_students(self):
+        self.text.delete(1.0, tk.END)
+        for s in self.students:
+            self.text.insert(tk.END, student_display_text(s))
+        avg = sum(overall_percentage(s) for s in self.students)/len(self.students)
+        self.text.insert(tk.END, f"Number of students: {len(self.students)}\n")
+        self.text.insert(tk.END, f"Average percentage: {avg:.2f}%\n")
+
+    def view_individual_student(self):
+        choice = simpledialog.askstring("Find student", "Enter student code OR name (partial allowed):")
+        if not choice: return
+        choice = choice.strip()
+        found = []
+        if choice.isdigit():
+            code = int(choice)
+            found = [s for s in self.students if s["code"] == code]
+        else:
+            found = [s for s in self.students if choice.lower() in s["name"].lower()]
+        if not found:
+            messagebox.showinfo("Not found", "No matching students found.")
+            return
+        student = found[0]
+        self.text.delete(1.0, tk.END)
+        self.text.insert(tk.END, student_display_text(student))
+
+    def show_highest(self):
+        best = max(self.students, key=lambda s: overall_percentage(s))
+        self.text.delete(1.0, tk.END)
+        self.text.insert(tk.END, "Student with highest overall mark:\n")
+        self.text.insert(tk.END, student_display_text(best))
+
+    def show_lowest(self):
+        worst = min(self.students, key=lambda s: overall_percentage(s))
+        self.text.delete(1.0, tk.END)
+        self.text.insert(tk.END, "Student with lowest overall mark:\n")
+        self.text.insert(tk.END, student_display_text(worst))
+
+    def sort_records(self):
+        resp = messagebox.askquestion("Sort", "Sort by overall percentage ascending? (No -> descending)")
+        ascending = resp == "yes"
+        self.students.sort(key=lambda s: overall_percentage(s), reverse=not ascending)
+        self.view_all_students()
+        messagebox.showinfo("Sorted", f"Records sorted ({'ascending' if ascending else 'descending'})")
+
+    def add_student(self):
+        dlg = StudentFormDialog(self.root, title="Add Student")
+        if dlg.result:
+            if any(s["code"] == dlg.result["code"] for s in self.students):
+                messagebox.showerror("Error", "Student code already exists.")
+                return
+            self.students.append(dlg.result)
+            self.view_all_students()
+            messagebox.showinfo("Added", f"Student {dlg.result['name']} added.")
+
+    def delete_student(self):
+        choice = simpledialog.askstring("Delete student", "Enter student code or name:")
+        if not choice: return
+        found = [s for s in self.students if choice.isdigit() and s["code"] == int(choice) or choice.lower() in s["name"].lower()]
+        if not found:
+            messagebox.showinfo("Not found", "No matching student found.")
+            return
+        sel = found[0]
+        if messagebox.askyesno("Confirm Delete", f"Delete {sel['name']}?"):
+            self.students.remove(sel)
+            self.view_all_students()
+            messagebox.showinfo("Deleted", f"Student {sel['name']} deleted.")
+
+    def update_student(self):
+        choice = simpledialog.askstring("Update student", "Enter student code or name:")
+        if not choice: return
+        found = [s for s in self.students if choice.isdigit() and s["code"] == int(choice) or choice.lower() in s["name"].lower()]
+        if not found:
+            messagebox.showinfo("Not found", "No matching student found.")
+            return
+        sel = found[0]
+        dlg = StudentFormDialog(self.root, title="Update Student", student=sel)
+        if dlg.result:
+            idx = self.students.index(sel)
+            self.students[idx] = dlg.result
+            self.view_all_students()
+            messagebox.showinfo("Updated", f"Student {dlg.result['name']} updated.")
+
+# ----------------------------
+# Student Form Dialog
+# ----------------------------
+class StudentFormDialog:
+    def __init__(self, parent, title="Student", student=None):
+        self.result = None
+        self.top = tk.Toplevel(parent)
+        self.top.title(title)
+        self.top.transient(parent)
+        self.top.grab_set()
+        frm = tk.Frame(self.top, bg=PANEL_COLOR, padx=15, pady=15)
+        frm.pack(fill="both", expand=True)
+
+        self.code_var = tk.StringVar(value=str(student["code"]) if student else "")
+        self.name_var = tk.StringVar(value=student["name"] if student else "")
+        self.m1_var = tk.StringVar(value=str(student["marks"][0]) if student else "")
+        self.m2_var = tk.StringVar(value=str(student["marks"][1]) if student else "")
+        self.m3_var = tk.StringVar(value=str(student["marks"][2]) if student else "")
+        self.exam_var = tk.StringVar(value=str(student["exam"]) if student else "")
+
+        labels = ["Student code (1000-9999):", "Name:", "Coursework 1 (0-20):",
+                  "Coursework 2 (0-20):", "Coursework 3 (0-20):", "Exam (0-100):"]
+        vars_ = [self.code_var, self.name_var, self.m1_var, self.m2_var, self.m3_var, self.exam_var]
+
+        for i, (lbl, var) in enumerate(zip(labels, vars_)):
+            tk.Label(frm, text=lbl, bg=PANEL_COLOR, fg=TEXT_COLOR, font=("Consolas", 10)).grid(row=i, column=0, sticky="w", pady=4)
+            tk.Entry(frm, textvariable=var, bg="#3a3f5c", fg=TEXT_COLOR, insertbackground=TEXT_COLOR, relief="flat").grid(row=i, column=1, sticky="ew", pady=4)
+        frm.columnconfigure(1, weight=1)
+
+        btnf = tk.Frame(frm, bg=PANEL_COLOR)
+        btnf.grid(row=6, column=0, columnspan=2, pady=10)
+        tk.Button(btnf, text="OK", command=self.on_ok, bg=BUTTON_COLOR, fg="white",
+                  activebackground=BUTTON_HOVER, relief="flat", bd=0).pack(side="left", padx=8)
+        tk.Button(btnf, text="Cancel", command=self.on_cancel, bg=BUTTON_COLOR, fg="white",
+                  activebackground=BUTTON_HOVER, relief="flat", bd=0).pack(side="left", padx=8)
+        parent.wait_window(self.top)
+
+    def on_ok(self):
+        try:
+            code = int(self.code_var.get().strip())
+            if not 1000 <= code <= 9999: raise ValueError
+        except:
+            messagebox.showerror("Invalid", "Student code must be 1000-9999")
+            return
+        name = self.name_var.get().strip()
+        if not name:
+            messagebox.showerror("Invalid", "Name cannot be empty")
+            return
+        try:
+            m1 = int(self.m1_var.get().strip())
+            m2 = int(self.m2_var.get().strip())
+            m3 = int(self.m3_var.get().strip())
+            if not all(0 <= x <= 20 for x in (m1, m2, m3)): raise ValueError
+        except:
+            messagebox.showerror("Invalid", "Coursework marks must be 0-20")
+            return
+        try:
+            exam = int(self.exam_var.get().strip())
+            if not 0 <= exam <= 100: raise ValueError
+        except:
+            messagebox.showerror("Invalid", "Exam must be 0-100")
+            return
+        self.result = {"code": code, "name": name, "marks": [m1, m2, m3], "exam": exam}
+        self.top.destroy()
+
+    def on_cancel(self):
+        self.top.destroy()
+
+# ----------------------------
+# Run App
+# ----------------------------
+def main():
+    root = tk.Tk()
+    app = StudentManagerApp(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
