@@ -13,14 +13,14 @@ class JokeApp:
         self.canvas.place(x=0, y=0)
 
         # Colors for animated gradient
-        self.color1 = [66, 135, 245]     # Blue
+        self.color1 = [66, 135, 245]    
         self.animate_gradient()
 
         # Frame for text
         self.text_frame = tk.Frame(root, bg="white", bd=3, relief="groove")
         self.text_frame.place(relx=0.5, rely=0.45, anchor="center", width=500, height=220)
 
-        # Title (fixed – removed transparency)
+        # Title 
         self.title = tk.Label(
             root,
             text="Alexa Joke Assistant",
@@ -32,7 +32,7 @@ class JokeApp:
         )
         self.title.place(relx=0.5, y=40, anchor="center")
 
-        # Joke setup label
+        # jokes  setup 
         self.setup_label = tk.Label(
             self.text_frame,
             text="",
@@ -43,7 +43,7 @@ class JokeApp:
         )
         self.setup_label.pack(pady=10)
 
-        # Joke punchline label
+        # Joke punchline 
         self.punchline_label = tk.Label(
             self.text_frame,
             text="",
@@ -136,7 +136,7 @@ class JokeApp:
         self.punchline_label.config(text=self.current_punchline)
 
     def animate_gradient(self):
-        # Animate background color subtly
+        # Animate background color 
         for i in range(3):
             self.color1[i] = (self.color1[i] + 1) % 255
 
